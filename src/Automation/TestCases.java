@@ -2,6 +2,7 @@ package Automation;
 
 import java.sql.Driver;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
@@ -10,7 +11,9 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.edge.EdgeDriver;
+import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.Select;
+import org.openqa.selenium.support.ui.WebDriverWait;
 import org.testng.Assert;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
@@ -117,29 +120,61 @@ Boolean ExbectedMessage=true;
 Assert.assertEquals(ActualMessage, ExbectedMessage);
 
 }
-@Test(priority = 4,enabled = true,invocationCount = 10)
-public void addItemes() throws InterruptedException
-{
-driver.navigate().to(mywebsite);
-Thread.sleep(1000);
+@Test(priority = 4, enabled = true, invocationCount = 10)
+public void addItemes() throws InterruptedException {
+    driver.navigate().to(mywebsite);
 
-List<WebElement>Allitems=driver.findElements(By.className("prdocutname"));
-int randomIndexForTheItem=rand.nextInt(Allitems.size());
-//go to the item page
-Allitems.get(randomIndexForTheItem).click();
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    Random rand = new Random();
 
-//Out of stock items
-Boolean OutOfStock=driver.getPageSource().contains("Out of Stock");
-if(OutOfStock==true)
-{
-	driver.navigate().to(mywebsite);		
+    // Pick random item
+    List<WebElement> Allitems = driver.findElements(By.className("prdocutname"));
+    int randomIndexForTheItem = rand.nextInt(Allitems.size());
+    Allitems.get(randomIndexForTheItem).click();
+
+    // Check if product has size options
+    boolean isSizePage = driver.getCurrentUrl().contains("product_id=116");
+
+    if (isSizePage) {
+        List<WebElement> SizeSelector = driver.findElements(By.cssSelector(SizeUKID));
+
+        List<WebElement> availableSizes = new ArrayList<>();
+        for (WebElement size : SizeSelector) {
+            String sizeText = size.getText().trim();
+            boolean isDisabled = !size.isEnabled(); // catches <option disabled>
+            boolean markedOut = sizeText.toLowerCase().contains("out of stock");
+
+            System.out.println("Found size: " + sizeText + " | enabled=" + size.isEnabled());
+
+            if (!isDisabled && !markedOut) {
+                availableSizes.add(size);
+            }
+        }
+
+        if (!availableSizes.isEmpty()) {
+            int randomIndexForTheSize = rand.nextInt(availableSizes.size());
+            WebElement chosenSize = availableSizes.get(randomIndexForTheSize);
+            chosenSize.click();
+            System.out.println("Selected size: " + chosenSize.getText());
+        } else {
+            System.out.println("All sizes are out of stock. Skipping...");
+            return;
+        }
+    }
+
+    // Check stock status safely
+    List<WebElement> stockLabels = driver.findElements(By.cssSelector(OutofStockId));
+    boolean isOutOfStock = !stockLabels.isEmpty() &&
+                           stockLabels.get(0).getText().toLowerCase().contains("out of stock");
+
+    if (!isOutOfStock) {
+        WebElement AddItem = wait.until(ExpectedConditions.elementToBeClickable(By.xpath(AddToCartId)));
+        AddItem.click();
+        System.out.println("Item added to cart ✅");
+    } else {
+        System.out.println("Item is out of stock ❌, skipping...");
+    }
 }
-else
-{
-WebElement AddItem=driver.findElement(By.xpath(AddToCartId));
-AddItem.click();
-}
 
 
-}
 }

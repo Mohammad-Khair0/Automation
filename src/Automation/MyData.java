@@ -62,6 +62,9 @@ String ExpectedTextForTheLogOut = "You have been logged off your account. It is 
 String ContinueButton2="//a[@title='Continue']";
 //IDs for adding items
 String AddToCartId="//a[normalize-space()='Add to Cart']";
+String OutofStockId=".nostock";
+String SizeUKID="input[name='option[344][]']";
+
 //IDs for LogInTest
 String LoginNID="loginFrm_loginname";
 String LogInPID="loginFrm_password";
